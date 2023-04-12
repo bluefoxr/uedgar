@@ -11,3 +11,9 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/bluefoxr/uedgar
 BugReports: https://github.com/bluefoxr/uedgar/issues
+Depends: 
+    R (>= 2.10)
+Imports: 
+    data.table,
+    odbc
+RoxygenNote: 7.2.3
