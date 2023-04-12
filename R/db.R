@@ -2,13 +2,15 @@
 
 connect_to_edgar <- function(){
 
+  source("db_login.R")
+
   odbc::dbConnect(
     odbc::odbc(),
     Driver   = "SQL Server",
     Server   = "139.191.9.230",
     Database = "EDGAR_v4",
-    UID      = "edgar_beckewi",
-    PWD      = "EOLO1234!",
+    UID      = uname,
+    PWD      = pwd,
     Port     = 1433
   )
 
