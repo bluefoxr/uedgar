@@ -1,12 +1,13 @@
 Package: uedgar
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Uncertainty estimates for EDGAR emissions
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: William Becker
+Maintainer: William Becker
+Description: The main purpose is to return emissions data and associated confidence intervals for a range of user queries.
+    This also contains some possibly useful functions for connecting to EDGAR and will eventually also have functions for
+    plotting, probably.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/bluefoxr/uedgar
@@ -15,5 +16,6 @@ Depends:
     R (>= 2.10)
 Imports: 
     data.table,
+    glue,
     odbc
 RoxygenNote: 7.2.3
