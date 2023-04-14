@@ -46,7 +46,7 @@ aggregate_unc_dt <- function(dt, col_emissions, col_min, col_max, col_group){
   names(dt)[names(dt) == col_min] <- "UNC_MIN"
   names(dt)[names(dt) == col_max] <- "UNC_MAX"
 
-  # aggregate: this applies aggregate_unc() to the col_min and col_max columns,  .(mpgsum = mean(sum_col), t1 = sum(mpg))
+  # aggregate: this applies aggregate_unc() to the col_min and col_max columns,
   # grouped by the col_group column
   dt[, .(unc_min = aggregate_unc(UNC_MIN, EMISSIONS), unc_max = aggregate_unc(UNC_MAX, EMISSIONS)), by = c(col_group)]
 
