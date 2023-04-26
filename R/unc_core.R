@@ -5,6 +5,7 @@
 #' @param emissions A vector of emissions values
 #' @param emissions_uncertainties A vector of emissions uncertainties, as e.g.
 #' fractions or percentages. Must be same length as `emissions`.
+#' @param correlated If `TRUE` aggregates emissions assuming full correlation.
 #'
 #' @return A scalar value
 #' @export
