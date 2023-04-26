@@ -8,15 +8,21 @@
 #'
 #' @return A scalar value
 #' @export
-aggregate_unc <- function(emissions_uncertainties, emissions){
+aggregate_unc <- function(emissions_uncertainties, emissions, correlated = FALSE){
 
+  # TODO move these checks higher up for speed
   stopifnot(
     is.numeric(emissions),
     is.numeric(emissions_uncertainties),
-    length(emissions) == length(emissions_uncertainties)
+    length(emissions) == length(emissions_uncertainties),
+    is.logical(correlated)
   )
 
-  sqrt(sum(emissions_uncertainties^2, na.rm = TRUE))/sum(emissions, na.rm = TRUE)
+  if(correlated){
+    sum(emissions_uncertainties, na.rm = TRUE)
+  } else {
+    sqrt(sum(emissions_uncertainties^2, na.rm = TRUE))/sum(emissions, na.rm = TRUE)
+  }
 }
 
 #' Aggregate a table of emissions uncertainties
