@@ -1,7 +1,21 @@
 # for messing around
 
-# How many unique process codes at depth 3 are there more or less?
+# How many unique process codes at depth 3 are there?
 con <- connect_to_edgar()
+
+# we want just the codes from emi_id = '29072022103026'
+all_AD_codes <- DBI::dbGetQuery(
+  con,
+  glue::glue(
+    #"SELECT DISTINCT ad_code FROM emi_edgar_release WHERE emi_id IN ('29072022103026','31032022154544')"
+    "SELECT DISTINCT ad_code FROM emi_edgar_release WHERE emi_id IN ('29072022103026')"
+  ))
+
+# ok now check what is missing from uncertainty table
+unc <- DBI::dbReadTable(con, "unc_emi_table")
+
+setdiff(toupper(all_AD_codes$ad_code), toupper(unc$Process))
+
 
 dt <- get_emissions_data(con, substances = "CO2", countries = "ITA", years = 2018)
 
@@ -25,11 +39,11 @@ emi[ , Process3 := shrink_process_codes(Process.code)]
 
 # do we have all these codes in our table?
 emi_codes <- unique(dt$ad_code)
-uin_codes <- unique(uIN$Process)
+uin_codes <- unique(unc$Process)
 
 # NOPE!
 
-all(uin_codes %in% emi_codes)
+all(emi_codes %in% uin_codes)
 
 ################
 

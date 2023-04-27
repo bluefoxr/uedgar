@@ -7,9 +7,10 @@
 get_emissions_data(
   con,
   table_name = "emi_edgar_release",
-  substances,
-  countries,
-  years
+  substances = NULL,
+  countries = NULL,
+  years = NULL,
+  sectors = NULL
 )
 }
 \arguments{
@@ -24,11 +25,14 @@ returns all substances.}
 all countries.}
 
 \item{years}{Vector of years within the range 1960:2100}
+
+\item{sectors}{Character vector of sector codes to return}
 }
 \value{
 A data.table of emissions data
 }
 \description{
 Returns a data.table with emissions data as specified. Obviously depending on the query this
-can lead to a very large table, so use carefully.
+can lead to a very large table, so use carefully. The emissions data is returned as the lowest
+level available in EDGAR, without aggregating to higher levels.
 }

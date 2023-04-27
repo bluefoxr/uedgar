@@ -29,7 +29,8 @@ connect_to_edgar <- function(){
 #' Get emissions data
 #'
 #' Returns a data.table with emissions data as specified. Obviously depending on the query this
-#' can lead to a very large table, so use carefully.
+#' can lead to a very large table, so use carefully. The emissions data is returned as the lowest
+#' level available in EDGAR, without aggregating to higher levels.
 #'
 #' @param con An ODBC connection: use [connect_to_edgar()]
 #' @param table_name Name of the table to query - if not the default the query might not work
@@ -38,20 +39,29 @@ connect_to_edgar <- function(){
 #' @param countries A character vector of countries to return data from. Or if `NULL` returns
 #' all countries.
 #' @param years Vector of years within the range 1960:2100
+#' @param sectors Character vector of sector codes to return
+#'
+#' @import data.table
 #'
 #' @return A data.table of emissions data
 #' @export
-get_emissions_data <- function(con, table_name = "emi_edgar_release", substances, countries, years){
+get_emissions_data <- function(con, table_name = "emi_edgar_release",
+                               substances = NULL, countries = NULL,
+                               years = NULL, sectors = NULL){
 
   # Checks ------------------------------------------------------------------
 
   stopifnot(inherits(con, "Microsoft SQL Server"),
-            is.character(table_name),
-            all(substances %in% c("CO2", "N2O", "CH4")),
-            is.character(countries),
-            years %in% 1960:2100)
+            is.character(table_name)
+  )
 
   # Columns -----------------------------------------------------------------
+
+  if(is.null(years)){
+    years <- 1960:2100
+  } else {
+    stopifnot(years %in% 1960:2100)
+  }
 
   colnames_to_return <- c("pr_code", "Country_code_A3", "Substance", "ad_code")
 
@@ -69,6 +79,7 @@ get_emissions_data <- function(con, table_name = "emi_edgar_release", substances
   rows_to_return <- "emi_id = '29072022103026'"
 
   if(!is.null(substances)){
+    stopifnot(all(substances %in% c("CO2", "N2O", "CH4")))
     substances <- paste0(substances, collapse = "', '")
     rows_to_return <- glue::glue(
       "{rows_to_return}",
@@ -77,11 +88,34 @@ get_emissions_data <- function(con, table_name = "emi_edgar_release", substances
   }
 
   if(!is.null(countries)){
+    stopifnot(is.character(countries))
     countries <- paste0(countries, collapse = "', '")
     rows_to_return <- glue::glue(
       "{rows_to_return}",
       " AND Country_code_A3 IN ('{countries}')"
     )
+  }
+
+  if(!is.null(sectors)){
+
+    stopifnot(is.character(sectors))
+
+    rows_to_return <- glue::glue(
+      "{rows_to_return}",
+      " AND (ad_code LIKE '{sectors[1]}%'"
+    )
+
+    if(length(sectors) > 1){
+      for (ii in 2:length(sectors)){
+        rows_to_return <- glue::glue(
+          "{rows_to_return}",
+          " OR ad_code LIKE '{sectors[ii]}%'"
+        )
+      }
+    }
+
+    rows_to_return <- glue::glue("{rows_to_return})")
+
   }
 
   # Run query ---------------------------------------------------------------
@@ -107,4 +141,25 @@ get_country_info <- function(con){
 
   DBI::dbReadTable(con, "Countries") |>
     data.table::as.data.table()
+}
+
+get_uncertainty_table <- function(con){
+
+  # get cols from table
+  unc_table <- DBI::dbGetQuery(
+    con,
+    "SELECT Process, Substance, Country, Unc_emi_min_fixed, Unc_emi_max_fixed FROM unc_emi_table"
+  ) |>
+    data.table::as.data.table()
+
+  # hacky: have to deal with AAAs for join and this is the easiest way I know
+  # note: not too bad as it only adds extra 600 rows out of 10000
+  # I extract the AAAs, duplicate them and mark each as I and D respectively
+  AAAs <- unc_table[Country == "AAA", ]
+  AAAs[, Country := "I"]
+
+  unc_table <- rbind(unc_table, AAAs)
+  unc_table[Country == "AAA", Country := "D"]
+
+  unc_table
 }
