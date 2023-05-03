@@ -42,6 +42,23 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
 
   emi_data <- unc_table[emi_data, on = .(Country = dev_country, Process = ad_code, Substance = Substance)]
 
-  #
+  # NOTE the Unc_emi_min_fixed (and max) cols are the upper and lower uncertainty factors, for emissions,
+  # as PERCENTAGES. This is already after cap at 230% and correction factor.
+
+  # Calc emi min/max --------------------------------------------------------
+
+  # first make long for convenience
+  # note that NAs are removed at this point
+  emi_data <- melt(emi_data, measure = patterns("^Y_"), value.name = "Emissions",
+                   variable.name = "Year", na.rm = TRUE)
+  # convert year column to integer
+  emi_data[, Year := as.integer(substr(Year, 3, 6))]
+
+  # calc min/max as new columns
+  emi_data[, Emissions_Min := Emissions - (Emissions*Unc_emi_min_fixed/100)]
+  emi_data[, Emissions_Max := Emissions + (Emissions*Unc_emi_max_fixed/100)]
+
+
+
 
 }

@@ -46,7 +46,7 @@ aggregate_unc_dt <- function(dt, col_emissions, col_min, col_max, col_group){
     col_min %in% names(dt),
     col_max %in% names(dt),
     col_group %in% names(dt)
-    )
+  )
 
   # Hacky rename of columns due to can't figure out the correct data.table syntax...
   names(dt)[names(dt) == col_emissions] <- "EMISSIONS"
