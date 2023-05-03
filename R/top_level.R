@@ -55,8 +55,12 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
   emi_data[, Year := as.integer(substr(Year, 3, 6))]
 
   # calc min/max as new columns
+  # NOTE don't allow negative emissions
   emi_data[, Emissions_Min := Emissions - (Emissions*Unc_emi_min_fixed/100)]
+  emi_data[, Emissions_Min := fifelse(Emissions_Min < 0, 0, Emissions_Min)]
   emi_data[, Emissions_Max := Emissions + (Emissions*Unc_emi_max_fixed/100)]
+
+  # Aggregate up ------------------------------------------------------------
 
 
 
