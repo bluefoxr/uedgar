@@ -12,7 +12,7 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
 
   # Get emissions data ------------------------------------------------------
 
-  emi_data <- get_emissions_data(
+  dt_emissions <- get_emissions_data(
     con,
     substances = substances,
     countries = countries,
@@ -28,41 +28,52 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
     "SELECT Country_code_A3, dev_country FROM Countries WHERE dev_country IN ('I', 'D')"
   ) |> data.table::as.data.table()
 
-  emi_data <- countries_table[emi_data, on = .(Country_code_A3)]
+  dt_emissions <- countries_table[dt_emissions, on = .(Country_code_A3)]
 
   # Join on uncertainties ---------------------------------------------------
 
   unc_table <- get_uncertainty_table(con)
 
-  missing_codes <- setdiff(unique(emi_data$ad_code), unique(unc_table$Process))
+  missing_codes <- setdiff(unique(dt_emissions$ad_code), unique(unc_table$Process))
 
   if(length(missing_codes) > 0){
     warning("Some AD codes from data set not found in uncertainty table: ", toString(missing_codes), call. = TRUE)
   }
 
-  emi_data <- unc_table[emi_data, on = .(Country = dev_country, Process = ad_code, Substance = Substance)]
+  dt_emissions <- unc_table[dt_emissions, on = .(Country = dev_country, Process = ad_code, Substance = Substance)]
 
-  # NOTE the Unc_emi_min_fixed (and max) cols are the upper and lower uncertainty factors, for emissions,
+  # change names to something clearer
+  setnames(dt_emissions, c("Unc_emi_min_fixed", "Unc_emi_max_fixed"), c("prc_lower", "prc_upper"))
+
+  # NOTE the prc_lower and prc_upper cols are the upper and lower uncertainty factors, for emissions,
   # as PERCENTAGES. This is already after cap at 230% and correction factor.
 
   # Calc emi min/max --------------------------------------------------------
 
   # first make long for convenience
   # note that NAs are removed at this point
-  emi_data <- melt(emi_data, measure = patterns("^Y_"), value.name = "Emissions",
+  dt_emissions <- melt(dt_emissions, measure = patterns("^Y_"), value.name = "Emissions",
                    variable.name = "Year", na.rm = TRUE)
   # convert year column to integer
-  emi_data[, Year := as.integer(substr(Year, 3, 6))]
+  dt_emissions[, Year := as.integer(substr(Year, 3, 6))]
 
   # calc min/max as new columns
   # NOTE don't allow negative emissions
-  emi_data[, Emissions_Min := Emissions - (Emissions*Unc_emi_min_fixed/100)]
-  emi_data[, Emissions_Min := fifelse(Emissions_Min < 0, 0, Emissions_Min)]
-  emi_data[, Emissions_Max := Emissions + (Emissions*Unc_emi_max_fixed/100)]
+  # dt_emissions[, Emissions_Min := Emissions - (Emissions*prc_lower/100)]
+  # dt_emissions[, Emissions_Min := fifelse(Emissions_Min < 0, 0, Emissions_Min)]
+  # dt_emissions[, Emissions_Max := Emissions + (Emissions*prc_upper/100)]
 
   # Aggregate up ------------------------------------------------------------
 
+  #dt_aggregated <- dt_emissions[, aggregate_substance(.SD), by = c("Country_code_A3", "Year", "Substance")]
 
+  # split on substances
+  dt_aggregated <- lapply(substances, function(substance){
 
+    dt_emissions[Substance == substance, aggregate_substance(.SD), by = c("Country_code_A3", "Year")]
+
+  })
+
+  dt_aggregated <- Reduce(rbind, dt_aggregated)
 
 }

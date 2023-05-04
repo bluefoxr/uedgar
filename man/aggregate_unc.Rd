@@ -4,13 +4,10 @@
 \alias{aggregate_unc}
 \title{Aggregate a set of emissions uncertainties}
 \usage{
-aggregate_unc(emissions_uncertainties, emissions, correlated = FALSE)
+aggregate_unc(dt_emissions, correlated = FALSE)
 }
 \arguments{
-\item{emissions_uncertainties}{A vector of emissions uncertainties, as e.g.
-fractions or percentages. Must be same length as `emissions`.}
-
-\item{emissions}{A vector of emissions values}
+\item{dt_emissions}{Data table with columns Emissions, Emissions_Min, Emissions_Max}
 
 \item{correlated}{If `TRUE` aggregates emissions assuming full correlation.}
 }

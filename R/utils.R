@@ -32,6 +32,17 @@ shrink_process_codes <- function(codes, depth = 3){
 
 }
 
+extract_fuels <- function(codes){
+
+  stopifnot(is.character(codes))
+
+  n_char <- nchar(codes)
+  stopifnot(length(unique(n_char)) == 1,
+            n_char[1] >= 11)
+
+  substr(codes, 9, 11)
+}
+
 #' Get depth of process code
 #'
 #' Checks the format of a vector of EDGAR process codes, ensures they are valid,
