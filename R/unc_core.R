@@ -3,7 +3,7 @@
 #' Aggregates a table of emissions uncertainties into a single value with upper
 #' and lower percentages. Note that `NA`s in emissions or emissions uncertainties are excluded.
 #'
-#' @param dt_emissions Data table with columns Emissions, Emissions_Min, Emissions_Max
+#' @param dt_emissions Data table with columns Emissions, prc_lower, prc_upper, substance
 #' @param correlated If `TRUE` aggregates emissions assuming full correlation.
 #'
 #' @return A scalar value
@@ -20,31 +20,19 @@ aggregate_unc <- function(dt_emissions, correlated = FALSE){
 
   sum_emi <- dt_emissions[, sum(Emissions, na.rm = TRUE)]
 
-  #country <- dt_emissions[, unique(Country_code_A3)]
-  #year <- dt_emissions[, unique(Year)]
   substance <- dt_emissions[, unique(Substance)]
-
-  # assume here we only have one country/year/substance
-  stopifnot(length(country) == 1,
-            length(year) == 1,
-            length(substance) == 1)
 
   if(correlated){
     # note this is like the weighted average
     dt_emissions[,
-                 .(#Year = year,
-                   #Country_code_A3 = country,
-                   Substance = substance,
+                 .(Substance = substance,
                    Emissions = sum_emi,
                    prc_lower = sum((prc_lower*Emissions), na.rm = TRUE)/sum_emi,
                    prc_upper = sum((prc_upper*Emissions), na.rm = TRUE)/sum_emi)]
   } else {
     dt_emissions[,
-                 .(#Year = year,
-                   #Country_code_A3 = country,
-                   Substance = substance,
+                 .(Substance = substance,
                    Emissions = sum_emi,
-                   Emissions = sum(Emissions, na.rm = TRUE),
                    prc_lower = f_agg_correlated(Emissions, prc_lower),
                    prc_upper = f_agg_correlated(Emissions, prc_upper))]
   }
@@ -63,48 +51,65 @@ f_agg_correlated <- function(emi, u){
   sqrt(sum((u*emi)^2, na.rm = TRUE))/sum(emi, na.rm = TRUE)
 }
 
-
-#' Aggregate emissions uncertainties by group
+#' Aggregate emissions uncertainties by substance
 #'
-#' Aggregates a table of emissions uncertainties by a specified group: either
-#' Sector or Fuel. Note that the table only needs to contain the "Process" column,
-#' the Sector/Fuel is extracted here from that column.
+#' Aggregates a table of emissions uncertainties depending on whether CO2 or
+#' not. If CO2 aggregates by fuel. Otherwise, aggregates by sector. In both cases
+#' the emissions within these groups are considered as correlated by default.
 #'
 #' @param dt_emissions Data table of emissions
-#' @param aggregate_by Either `"Sector"` or `"Fuel"`
-#' @param correlated Logical: whether to consider uncertainties within groups as
-#' correlated or not.
 #'
 #' @return A data table
 #' @export
-aggregate_by_group <- function(dt_emissions, aggregate_by, correlated){
-
-  stopifnot(aggregate_by %in% c("Sector", "Fuel"))
-
-  if(aggregate_by == "Sector"){
-    dt_emissions[, Sector:= shrink_process_codes(Process, 1)]
-  } else {
-    dt_emissions[, Fuel:= extract_fuels(Process)]
-  }
-
-  dt_emissions[, aggregate_unc(.SD, correlated = correlated), by = c(aggregate_by)]
-}
-
-aggregate_substance <- function(dt_emissions){
+aggregate_substance <- function(dt_emissions, correlate_in_fuel = TRUE,
+                                correlate_in_sector = TRUE){
 
   substance <- dt_emissions[, unique(Substance)]
   stopifnot(length(substance) == 1)
 
-
   if(substance == "CO2"){
-    aggregate_by_group(dt_emissions, aggregate_by = "Fuel", correlated = TRUE)
+    dt_emissions[, aggregate_unc(.SD, correlated = correlate_in_fuel), by = c("Fuel")]
   } else {
-    aggregate_by_group(dt_emissions, aggregate_by = "Sector", correlated = TRUE)
+    dt_emissions[, aggregate_unc(.SD, correlated = correlate_in_sector), by = c("Sector")]
   }
 
 }
 
+#' Aggregate emissions uncertainties by groups
+#'
+#' Aggregates a table of emissions uncertainties based on a specified group.
+#'
+#' @param dt_emissions Data table of emissions
+#'
+#' @return A data table
+#' @export
+aggregate_by_group <- function(dt_emissions, by_group, correlated = TRUE){
+
+  dt_emissions[, aggregate_unc(.SD, correlated = correlated), by = c(by_group)]
+
+}
+
 # SPARE CODE --------------------------------------------------------------
+
+# Aggregate emissions uncertainties by group
+#
+# Aggregates a table of emissions uncertainties by a specified group: either
+# Sector or Fuel. Note that the table only needs to contain the "Process" column,
+# the Sector/Fuel is extracted here from that column.
+#
+# @param dt_emissions Data table of emissions
+# @param aggregate_by Either `"Sector"` or `"Fuel"`
+# @param correlated Logical: whether to consider uncertainties within groups as
+# correlated or not.
+#
+# @return A data table
+# @export
+# aggregate_by_group <- function(dt_emissions, aggregate_by, correlated){
+#
+#   stopifnot(aggregate_by %in% c("Sector", "Fuel"))
+#
+#   dt_emissions[, aggregate_unc(.SD, correlated = correlated), by = c(aggregate_by)]
+# }
 
 # Aggregate a table of emissions uncertainties
 #

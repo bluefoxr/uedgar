@@ -1,6 +1,7 @@
 # Top-level user-facing functions
 
-get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countries = NULL, sectors = NULL){
+get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countries = NULL, sectors = NULL,
+                                    agg_countries = FALSE, agg_sectors = TRUE, agg_substance = FALSE){
 
 
   # Input checks ------------------------------------------------------------
@@ -48,7 +49,7 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
   # NOTE the prc_lower and prc_upper cols are the upper and lower uncertainty factors, for emissions,
   # as PERCENTAGES. This is already after cap at 230% and correction factor.
 
-  # Calc emi min/max --------------------------------------------------------
+  # Wrangling ready for aggregation ------------------------------------------
 
   # first make long for convenience
   # note that NAs are removed at this point
@@ -57,23 +58,66 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
   # convert year column to integer
   dt_emissions[, Year := as.integer(substr(Year, 3, 6))]
 
-  # calc min/max as new columns
-  # NOTE don't allow negative emissions
-  # dt_emissions[, Emissions_Min := Emissions - (Emissions*prc_lower/100)]
-  # dt_emissions[, Emissions_Min := fifelse(Emissions_Min < 0, 0, Emissions_Min)]
-  # dt_emissions[, Emissions_Max := Emissions + (Emissions*prc_upper/100)]
+  # Aggregate within sectors/fuels -------------------------------------------
 
-  # Aggregate up ------------------------------------------------------------
+  # create fuel and sector cols: tried to do this lower down but ran into an error
+  dt_emissions[, Sector:= shrink_process_codes(Process, 1)]
+  dt_emissions[, Fuel:= extract_fuels(Process)]
 
-  #dt_aggregated <- dt_emissions[, aggregate_substance(.SD), by = c("Country_code_A3", "Year", "Substance")]
-
-  # split on substances
+  # split on substances and aggregate (because substance defines how to aggregate)
   dt_aggregated <- lapply(substances, function(substance){
 
-    dt_emissions[Substance == substance, aggregate_substance(.SD), by = c("Country_code_A3", "Year")]
+    # first aggregate within substance
+    agg_chunk <- dt_emissions[Substance == substance,
+                              aggregate_substance(.SD),
+                              by = c("Country_code_A3", "Year")]
+
+    if (agg_countries) {
+
+      # aggregate same sectors from different countries together as CORRELATED
+      if(substance == "CO2"){
+        agg_chunk <- aggregate_by_group(agg_chunk, by_group = c("Fuel", "Year") , correlated = TRUE)
+      } else {
+        agg_chunk <- aggregate_by_group(agg_chunk, by_group = c("Sector", "Year"), correlated = TRUE)
+      }
+
+      # here we have sector/fuel totals across all countries
+      if (agg_sectors) {
+        # if also aggregating sectors together, just take the uncorrelated sum of everything
+        agg_chunk <-aggregate_by_group(agg_chunk, by_group = "Year", correlated = FALSE)
+      }
+
+
+    } else {
+
+      if (agg_sectors) {
+        # total emissions per country (all sectors/fuels added together)
+        agg_chunk <- aggregate_by_group(
+          agg_chunk,
+          by_group = c("Country_code_A3", "Year"),
+          correlated = FALSE
+        )
+      }
+
+    }
+
+    # calc min/max as new columns
+    # NOTE don't allow negative emissions
+    agg_chunk[, Emissions_Min := Emissions - (Emissions*prc_lower/100)]
+    agg_chunk[, Emissions_Min := fifelse(Emissions_Min < 0, 0, Emissions_Min)]
+    agg_chunk[, Emissions_Max := Emissions + (Emissions*prc_upper/100)]
+
+    agg_chunk
 
   })
 
-  dt_aggregated <- Reduce(rbind, dt_aggregated)
+  # special case where we will have dts for different substances, some with
+  # a "Fuel" column and others with a "Sector" column. Return list here.
+  if (("CO2" %in% substances) && (length(substances) > 1) && !agg_sectors){
+    return(dt_aggregated)
+  }
+
+  # otherwise, bind dts together
+  Reduce(rbind, dt_aggregated)
 
 }
