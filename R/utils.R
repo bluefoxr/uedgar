@@ -32,6 +32,11 @@ shrink_process_codes <- function(codes, depth = 3){
 
 }
 
+#' Get fuel codes from process codes
+#'
+#' @param codes
+#'
+#' @export
 extract_fuels <- function(codes){
 
   stopifnot(is.character(codes))

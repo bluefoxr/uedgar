@@ -8,6 +8,10 @@ aggregate_by_group(dt_emissions, by_group, correlated = TRUE)
 }
 \arguments{
 \item{dt_emissions}{Data table of emissions}
+
+\item{by_group}{Group name to use in aggregation (column name)}
+
+\item{correlated}{Whether to aggregate as correlated or not}
 }
 \value{
 A data table

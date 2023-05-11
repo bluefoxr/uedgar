@@ -3,7 +3,7 @@ Type: Package
 Title: Uncertainty estimates for EDGAR emissions
 Version: 0.1.0
 Author: William Becker
-Maintainer: William Becker
+Maintainer: William Becker <william.becker@ext.ec.europa.eu>
 Description: The main purpose is to return emissions data and associated confidence intervals for a range of user queries.
     This also contains some possibly useful functions for connecting to EDGAR and will eventually also have functions for
     plotting, probably.
@@ -18,5 +18,10 @@ Imports:
     data.table,
     DBI,
     glue,
-    odbc
+    odbc,
+    plotly,
+    shiny,
+    shinydashboard,
+    shinydashboardPlus,
+    shinyWidgets
 RoxygenNote: 7.2.3

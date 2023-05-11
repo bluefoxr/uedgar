@@ -58,6 +58,8 @@ f_agg_correlated <- function(emi, u){
 #' the emissions within these groups are considered as correlated by default.
 #'
 #' @param dt_emissions Data table of emissions
+#' @param correlate_in_fuel Whether to treat emissions within the same fuel as correlated
+#' @param correlate_in_sector Whether to treat emissions within same sector as correlated
 #'
 #' @return A data table
 #' @export
@@ -80,6 +82,8 @@ aggregate_substance <- function(dt_emissions, correlate_in_fuel = TRUE,
 #' Aggregates a table of emissions uncertainties based on a specified group.
 #'
 #' @param dt_emissions Data table of emissions
+#' @param by_group Group name to use in aggregation (column name)
+#' @param correlated Whether to aggregate as correlated or not
 #'
 #' @return A data table
 #' @export

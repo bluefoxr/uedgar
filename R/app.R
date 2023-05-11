@@ -19,12 +19,12 @@ run_app <- function(){
     body = shinydashboard::dashboardBody(
       fluidRow(
         shinydashboardPlus::box(title = "Select country", collapsible = TRUE,
-            pickerInput(
+            shinyWidgets::pickerInput(
               inputId = "country",
               label = "Countries",
               choices = valid_countries
             ),
-            pickerInput(
+            shinyWidgets::pickerInput(
               inputId = "sector",
               label = "Sector",
               choices = c("ALL", valid_sectors)
@@ -36,7 +36,7 @@ run_app <- function(){
                         value = c(2000, 2020), sep = ""))
       ),
       shinydashboardPlus::box(title = "Plot", id = "plot_box", width = 12, footer = "",
-          textOutput("message_text"),
+          textOutput("nodata_text"),
           plotly::plotlyOutput("ts_plot"))
     ),
     title = "uEDGAR"
@@ -44,38 +44,31 @@ run_app <- function(){
 
   server <- function(input, output) {
 
-    output$ts_plot <- plotly::renderPlotly({
+    # df of emissions
+    emi <- reactive({
 
       sector <- if(input$sector == "ALL") NULL else input$sector
 
-      emi <- get_uncertain_emissions(
+      get_uncertain_emissions(
         con,
         substances = "CO2",
         years = input$year_range[1]:input$year_range[2],
         countries = input$country,
-        sectors = sector)
+        sectors = sector
+      )
+    })
 
-      if(is.null(emi)){
-        shinydashboardPlus::updateBox(
-          "plot_box",
-          action = "update",
-          options = list(
-            title = "No data available for this query."
-          )
-        )
-        return(NULL)
+    output$ts_plot <- plotly::renderPlotly({
+      req(emi())
+      plot_time_series(emi())
+    })
+
+    output$nodata_text <- renderText({
+      if(is.null(emi())){
+        "No data available for this query..."
       } else {
-        shinydashboardPlus::updateBox(
-          "plot_box",
-          action = "update",
-          options = list(
-            title = "Plot"
-          )
-        )
+        ""
       }
-
-      plot_time_series(emi)
-
     })
 
   }

@@ -143,6 +143,15 @@ get_country_info <- function(con){
     data.table::as.data.table()
 }
 
+#' Get uncertainty table from DB
+#'
+#' Returns the uncertainty table giving uncertainty values for emissions at the
+#' lowest level.
+#'
+#' @param con DB connection established with [connect_to_edgar()].
+#'
+#' @return Data frame
+#' @export
 get_uncertainty_table <- function(con){
 
   # get cols from table

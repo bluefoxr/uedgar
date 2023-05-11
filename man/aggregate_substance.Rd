@@ -12,6 +12,10 @@ aggregate_substance(
 }
 \arguments{
 \item{dt_emissions}{Data table of emissions}
+
+\item{correlate_in_fuel}{Whether to treat emissions within the same fuel as correlated}
+
+\item{correlate_in_sector}{Whether to treat emissions within same sector as correlated}
 }
 \value{
 A data table
