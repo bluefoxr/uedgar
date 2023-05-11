@@ -7,7 +7,7 @@
 aggregate_unc(dt_emissions, correlated = FALSE)
 }
 \arguments{
-\item{dt_emissions}{Data table with columns Emissions, Emissions_Min, Emissions_Max}
+\item{dt_emissions}{Data table with columns Emissions, prc_lower, prc_upper, substance}
 
 \item{correlated}{If `TRUE` aggregates emissions assuming full correlation.}
 }
@@ -15,5 +15,6 @@ aggregate_unc(dt_emissions, correlated = FALSE)
 A scalar value
 }
 \description{
-Note that `NA`s in emissions or emissions uncertainties are excluded.
+Aggregates a table of emissions uncertainties into a single value with upper
+and lower percentages. Note that `NA`s in emissions or emissions uncertainties are excluded.
 }

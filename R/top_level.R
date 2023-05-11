@@ -21,6 +21,11 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
     years = years
   )
 
+  if(nrow(dt_emissions) == 0){
+    warning("No data found for specified query.")
+    return(NULL)
+  }
+
   # Join on country groupings -----------------------------------------------
 
   # get country grouping table: only rows where country is I or D

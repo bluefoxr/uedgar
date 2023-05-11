@@ -2,24 +2,18 @@
 % Please edit documentation in R/unc_core.R
 \name{f_agg_correlated}
 \alias{f_agg_correlated}
-\title{Aggregate a table of emissions uncertainties}
+\title{Aggregate correlated emissions}
 \usage{
 f_agg_correlated(emi, u)
 }
 \arguments{
-\item{dt}{A data table of emissions}
+\item{emi}{Vector of emissions values}
 
-\item{col_emissions}{Column name where the emissions data is in}
-
-\item{col_min}{Column name of max uncertainty}
-
-\item{col_max}{Column name of min uncertainty}
-
-\item{col_group}{Column to group by}
+\item{u}{Vector of emissions uncertainties as percentages or fractions}
 }
 \value{
-A data table of aggregated uncertainties by group
+Percentage or fraction uncertainty of total emissions
 }
 \description{
-One-shot aggregation of emissions uncertainties using data.table.
+Aggregates a vector of uncertainties and emissions using correlated formula.
 }
