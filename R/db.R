@@ -12,7 +12,7 @@
 #' @export
 connect_to_edgar <- function(){
 
-  source("db_login.R")
+  source(system.file("db_login.R", package = "uedgar"))
 
   odbc::dbConnect(
     odbc::odbc(),

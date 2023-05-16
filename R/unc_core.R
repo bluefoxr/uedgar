@@ -33,22 +33,22 @@ aggregate_unc <- function(dt_emissions, correlated = FALSE){
     dt_emissions[,
                  .(Substance = substance,
                    Emissions = sum_emi,
-                   prc_lower = f_agg_correlated(Emissions, prc_lower),
-                   prc_upper = f_agg_correlated(Emissions, prc_upper))]
+                   prc_lower = f_agg_uncorrelated(Emissions, prc_lower),
+                   prc_upper = f_agg_uncorrelated(Emissions, prc_upper))]
   }
 }
 
-#' Aggregate correlated emissions
+#' Aggregate uncorrelated emissions
 #'
-#' Aggregates a vector of uncertainties and emissions using correlated formula.
+#' Aggregates a vector of uncertainties and emissions using uncorrelated formula.
 #'
 #' @param emi Vector of emissions values
 #' @param u Vector of emissions uncertainties as percentages or fractions
 #'
 #' @return Percentage or fraction uncertainty of total emissions
 #' @export
-f_agg_correlated <- function(emi, u){
-  sqrt(sum((u*emi)^2, na.rm = TRUE))/sum(emi, na.rm = TRUE)
+f_agg_uncorrelated <- function(emi, u){
+  sqrt(sum((u*emi)^2, na.rm = TRUE))/sum(abs(emi), na.rm = TRUE)
 }
 
 #' Aggregate emissions uncertainties by substance
@@ -70,8 +70,14 @@ aggregate_substance <- function(dt_emissions, correlate_in_fuel = TRUE,
   stopifnot(length(substance) == 1)
 
   if(substance == "CO2"){
+    if("Fuel" %nin% names(dt_emissions)){
+      stop("Required column 'Fuel' not found in data (required for CO2)?")
+    }
     dt_emissions[, aggregate_unc(.SD, correlated = correlate_in_fuel), by = c("Fuel")]
   } else {
+    if("Sector" %nin% names(dt_emissions)){
+      stop("Required column 'Sector' not found in data (required for CH4, N2O)?")
+    }
     dt_emissions[, aggregate_unc(.SD, correlated = correlate_in_sector), by = c("Sector")]
   }
 
