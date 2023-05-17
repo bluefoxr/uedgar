@@ -1,0 +1,153 @@
+---
+title: "{uedgar} Overview"
+author: "William Becker"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Background
+
+The "uedgar" package is an R package developed for calculating confidence intervals of emissions estimates from the JRC's EDGAR database. It also includes some helper functions for interacting with EDGAR (e.g. retrieving data) which may be useful also in other contexts, and a Shiny app which can act as a UI for the R code (i.e. users can run the uncertainty calculations from a UI in the browser, rather than in the R console).
+
+This package was developed in the first months of 2023, and is based on the methodology in [this paper](https://doi.org/10.5194/acp-21-5655-2021), and the code implemented by Efisio Solazzo (former EDGAR researcher).
+
+The aim of the package is to provide a reproducible and well-documented set of tools for uncertainty calculation which will hopefully be accessible also to non-R users (or beginners), and also includes unit testing and validation.
+
+Note that to retrieve emissions data, the package requires a connection to the EDGAR database, which is only possible on the JRC scientific network (i.e. you have to be physically in the JRC and connected to the network, or else use some complicated bridging somehow). It also requires login credentials - these things are explained later in the vignette.
+
+## What does it do?
+
+The uedgar package returns emissions estimates, with confidence intervals, for a wide variety of queries to the EDGAR database. For example:
+
+-   Time series of total emissions for Italy from 1980-2020, with confidence intervals, for CH4
+-   Global emissions for sector ENE, over time, for CO2
+-   Total global emissions over time, for N2O
+
+These queries can be run either in the R console, or using the app. It also plots time series with confidence intervals, or returns tables. Current scope and limitations are:
+
+-   Access any year in EDGAR, or multiple years
+-   Access any country or group of countries
+-   Access any sector
+-   Restricted to substances CO2, N2O and CH4, since these are the only ones for which we have emission factor uncertainty data, for the moment
+
+## Methodology
+
+The methodology used is an analytical estimation of uncertainties (as opposed to Monte Carlo), which is suitable for the large data set, and is recommended by the IPCC. It begins with uncertainty data in emissions factors and activity data at the most disaggregated level, and propagates this using simple analytical equations up to the level required by the user (e.g. total emisions by sector, by country, etc.). Naturally, it comes with a number of assumptions and approximations which are necessary to achieve a result. These are explained and highlighted to the extent possible.
+
+The reason that Monte Carlo was not used is simply due to the computational time needed to do a Monte Carlo simulation. Since the input space is high-dimensional (many different EF and AD uncertainties), running a MC analysis would be quite time-consuming. This is at odds with the needs of the system, which is to calculate various different emissions estimates, with confidence intervals, fairly quickly. However, Monte Carlo could be used to cross-check or validate selected "analytical" estimates from the uedgar package.
+
+There were three main references for the methodology in this package:
+
+1.  The [EDGAR uncertainty paper](https://doi.org/10.5194/acp-21-5655-2021) (as previously mentioned).
+2.  The [2006 IPCC Guidelines for National Greenhouse Gas Inventories](https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol1.html) (see Chapter 3), which are the basis of the EDGAR paper in the previous point.
+3.  The code written by Efisio Solazzo to calculate uncertainties based on this methodology, which uncovered some practical details not explained in the other references.
+
+The uedgar package makes a number of improvements over Efisio's code (the motivations for re-writing it):
+
+1.  Code is formally wrapped in an R package, which means dependencies are properly declared, and it can be easily shared and installed.
+2.  It interacts directly with the EDGAR database, so emissions estimates with confidence intervals can be retrieved for any year, for various substances, countries etc. As opposed to the previous code where it was required to export data from EDGAR as csv, then import, etc.
+3.  It is significantly faster due to vectorised programming and the use of the data.table package.
+4.  Functions are properly documented, and the package is documented in the vignette.
+5.  Functional and literate programming is used where possible, so the code should be relatively easy to follow and adjust.
+
+Note that although the speed is greatly improved, some queries may still be a little slow because the uncertainty calculations always have to start at the most granular level of emissions data.
+
+### Input uncertainties
+
+Uncertainty analysis is a propagation of input uncertainties through a system, to calculate the uncertainty on the results of interest. It is important to first be clear about what the inputs, outputs, and the system are in our case.
+
+In our context, emissions estimates are calculated from *activity data* (AD) and *emissions factors* (EF). There are more inputs and uncertainties in the system than this, but we focus on these two as the main inputs for which we have credible estimates of uncertainty.
+
+This means our *inputs* are the AD and EFs (which are different for each sector, fuel, substance, etc). The *system* is the calculation of emissions estimates, at the specified aggregation level, using these inputs. The *outputs* are the emissions estimates.
+
+In order therefore to calculate the confidence intervals on the emissions estimates, we need to know the uncertainty on the EF and AD data. This information is available in several places (which will be reasonably familiar by now!):
+
+1.  The IPCC [2006 IPCC Guidelines for National Greenhouse Gas Inventories](https://www.ipcc-nggip.iges.or.jp/public/2006gl/index.html), where it is spread across many different tables in many different chapters.
+2.  The [EDGAR uncertainty paper](https://doi.org/10.5194/acp-21-5655-2021), which collects the EF and AD uncertainty information into one place as summary tables.
+3.  Efisio's code, which includes input tables for both AD and EF, albeit in a very long format.
+
+An issue that became obvious during the construction of the uedgar package was that the AD and EF uncertainties have many differences between the three sources mentioned, even though one would expect them to be the same. This was probably due to some updates and assumptions made in compiling the code, but also some errors which we have tried to correct where possible. Part of the problem seemed to be due to the very long uncertainty input tables used in the previous code, which included many repetitions.
+
+To improve this, the EF and AD uncertainty tables were reconstructed, primarily based on the tables used in Efisio's code, but also including a number of corrections and further assumptions. This process is described and documented as well as possible elsewhere. In short, it resulted in two much clearer tables (one for EF and one for AD) which can be more easily checked for errors, updated and maintained. These tables are now stored on EDGAR (table names to be added...).
+
+Uncertainties on AD are expressed as percentages of the nominal value, and with AD data the uncertainties are considered to be symmetric. Note that AD uncertainties are relatively small.
+
+Uncertainties on EF are also expressed as percentages of the nominal value, but are more complicated because often the uncertainty is *not* symmetric, and we have different percentages either side of the mean. In other words, we often have values such as 30% and +50% as the uncertainty below and above the mean, respectively. This forces some assumptions later on in the methodology which will be discussed.
+
+### Combining AD and EF uncertainties
+
+With the AD and EF uncertainty tables at hand (which define uncertainty at the lowest level of disaggregation in EDGAR), the next step is to calculate the emissions uncertainties, still at this low level. This is done using the following equation:
+
+$$ u_E=\sqrt{(u_{EF}^2+u_{AD}^2 )} $$
+
+where $u_{EF}$ is the EF uncertainty, $u_{AD}$ is the AD uncertainty, and $u_E$ is the emissions uncertainty, for a given EDGAR process. 
+It is worth clarifying at this point what we actually mean by the "uncertainty". In the equation above, "uncertainty" refers to a *standardised* measure of uncertainty, such as a percentage or fraction of the nominal value (in our tables the percentage uncertainty is used). In our case, this percentage represents two standard deviations from the mean.
+
+For example, say we have an activity data estimate of 50 (units are unimportant). Assuming a normal distribution, and standard deviation of 10, then our uncertainty interval is two standard deviations either side of the mean, i.e. 30 as the lower bound, and 70 as the upper bound. The *percentage* uncertainty is two standard deviations divided by the mean, 20/50, i.e. 40%. 
+
+In summary when talking about uncertainties we can have various measures, including:
+
+- The standard deviation
+- The variance (the square of the standard deviation)
+- The "percentage uncertainty" which is two standard deviations divided by the mean
+- The lower/upper bounds on the estimates of AD, EF, emissions, etc, which involve subtracting/adding two standard deviations from the mean value.
+
+...plus other things, like the coefficient of variation, etc. The important point here is to be clear what we mean by "the uncertainty", and also to keep in mind that measures like standard deviation and variance are linked to the scale of the variable, whereas the percentage uncertainty is scale-invariant.
+
+With this detour complete, a final point must be made in this section. The equation above assumes that there is only one uncertainty value for EF, and one for AD (i.e. the distributions are symmetric). In reality, we often have different upper and lower uncertainty percentages for EF, as mentioned previously. To account for this, we apply the equation twice, once for the upper and once for the lower EF uncertainty, which results in an upper and lower percentage for the emissions uncertainty. This violates the assumption that the distributions are normally distributed, but is an unfortunate necessity in order to obtain a result.
+
+### Adjustments
+
+The next step is to cap any uncertainties at a maximum value of 230%. This is done for two reasons:
+
+1. The correction factor in the next step is inaccurate above this range.
+2. EDGAR experts agree that uncertainties above this range are not hugely realistic.
+
+Next, a correction factor is applied, as recommended in the IPCC methodology. This is only applied to uncertainties over 100%, and is used because the analytical methodology tends to slightly underestimate uncertainty for larger uncertainty values. The correction factor is:
+
+$$ c = \left[ \frac{-0.72 + 1.0921U - 1.63 \times 10^{-3} U^2 + 1.11 \times 10^{-5} U^3}{U} \right]^2 $$
+
+and this is multiplied by the emissions uncertainty percentage to give the corrected value:
+
+$$ u_{E, \text{corrected}} = cu_E $$
+
+Note that **all the calculations done so far were implemented in the EDGAR database directly** (not in R). This includes joining the EF and AD tables (a non-trivial task).
+
+The result up to this point is a fairly large table with all EDGAR process codes up to the fuel "level", i.e. "XXX.XXX.XXX", and with upper and lower uncertainties as percentages for each code, and for each of the three sunbstances for which uncertainty data is available (CO2, CH4 and N2O). This table is called "unc_emi_table" on EDGAR, and can be retrieved with the uedgar package:
+
+```{r, eval=FALSE}
+# "con" is a database connection object created by connect_to_edgar() (see later)
+uncertainty_table <- get_uncertainty_table(con)
+```
+
+### Aggregating
+
+With the uncertainty table so far, we could calculate upper and lower confidence intervals on the emissions estimates, but only at the low level of aggregation. Usually we are more interested in knowing emissions and uncertainties at higher levels, such as total by sector, or total over all sectors, etc.
+
+To do this ... TO FINISH!
+
+```{r setup}
+library(uedgar)
+```
+
+
+## Limitations
+
+The methodology used here involves a number of assumptions and is far from perfect. However, it seems the most viable way to estimate uncertainty, given the available data and constraints such as computational time. The limitations are summarised here. 
+
+* The uncertainty calculation assumes that the only sources of uncertainty are the EF and AD uncertainties. In reality there are probably many others.
+* The uncertainty estimate on emissions is only as accurate as the uncertainty estimates for EF and AD. So if these uncertainties are not accurate, the end emissions uncertainty estimates will also not be accurate. To improve this, we could review the input uncertainty tables to check their accuracy and update where possible.
+* The IPCC methodology assumes that AD and EF uncertainties are symmetric and normally-distributed. In reality, EF uncertainties at least are often skewed. To get round this we use separate estimates for upper and lower bounds, although this is not strictly correct. Probably the only way to do this more correctly is using a Monte Carlo approach.
+* We cap all emissions uncertainties (at the lowest level) at 230%.
+* At the moment, we can only estimate uncertainties on CO2, CH4 and N2O, because these are the only ones for which we have EF uncertainty data (at the moment).
+
