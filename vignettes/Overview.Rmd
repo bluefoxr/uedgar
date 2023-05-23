@@ -84,6 +84,8 @@ Uncertainties on AD are expressed as percentages of the nominal value, and with 
 
 Uncertainties on EF are also expressed as percentages of the nominal value, but are more complicated because often the uncertainty is *not* symmetric, and we have different percentages either side of the mean. In other words, we often have values such as 30% and +50% as the uncertainty below and above the mean, respectively. This forces some assumptions later on in the methodology which will be discussed.
 
+Finally, uncertainties are typically different for industrialised and developing countries: in general, developing countries are assumed to have a higher level of uncertainty. The distinction between developing and industrialised countries is taken from the "Countries" table in EDGAR.
+
 ### Combining AD and EF uncertainties
 
 With the AD and EF uncertainty tables at hand (which define uncertainty at the lowest level of disaggregation in EDGAR), the next step is to calculate the emissions uncertainties, still at this low level. This is done using the following equation:
@@ -140,14 +142,76 @@ To do this, we have to aggregate the uncertainties up to the level of interest. 
 2. For CO2: any emissions with the same fuel type are aggregated as correlated.
 3. When aggregating across countries, emissions from the same sectors are aggregated as correlated. In other words, we treat e.g. the total "ENE" emissions from Italy as correlated with the total "ENE" emissions from France, and all other countries.
 
-All other aggregations are treated as *uncorrelated*. NOTE BIOFUELS.
+All other aggregations are treated as *uncorrelated*.
 
-For *uncorrelated*
+The difference between correlated and uncorrelated aggregation of uncertainties is simply the formula used. In the uncorrelated case:
+
+$$ 
+u_{E,TOT} = \frac{\sqrt{(u_{E,1}E_1)^2 + (u_{E,2}E_2)^2 + ⋯ + (u_{E,n}E_n)^2}}{|E_1+E_2+⋯E_n|}
+$$
+
+Here the $E_i$ are the emissions estimates, and the $u_{E,i}$ are the standardised uncertainties associated with each, typically percentages or fractions.
+
+In the correlated case, generally the equation is more complex because of covariances. However, the assumption used in the EDGAR paper is:
+
+> where emissions estimates are correlated, they are perfectly correlated (i.e. with a correlation coefficient of 1)
+
+In other words, we only consider correlations of either 0 or 1, and nothing in between. This assumption was made even though correlations are likely to be less than 1 because (a) no information is available on the true correlation values, and (b) this acts as a conservative estimate. The estimate is conservative because higher correlation leads to higher uncertainty, therefore assuming a correlation of 1 acts as an upper bound on the uncertainty (excluding non-quantified sources).
+
+In the correlated case therefore, with a correlation coefficient of 1, the aggregation is simple:
+
+$$ 
+u_{E,TOT} = \frac{u_{E,1}E_1 + u_{E,2}E_2 + ⋯ + u_{E,n}E_n}{|E_1+E_2+⋯E_n|}
+$$
+
+In other words, it is simply the sum of the uncertainties, weighted by the emissions values. The important thing in the correlated case is to pay attention to what is correlated with what. For example, emissions are correlated within fuels for CO2, but not between fuels. Therefore putting the correlation rules in practice entails doing things in the right order. In the uedgar package, the order of operations is as follows:
+
+1. Emissions are aggregated as correlated for the same fuel for CO2 or same sector for N2O and CH4. This results in aggregated values for each fuel/sector, possibly per year, country and fuel.
+2. If the request is national totals, total emissions are calculated by aggregating fuel/sector totals as uncorrelated. If the request is to aggregate beyond national level, sectors/fuels from different countries are first aggregated together as correlated, then the total is calculated by taking the uncorrelated aggregate.
+3. All other aggregations are treated as uncorrelated.
+
+Aside from the aggregation of uncertainties, the emissions themselves are also summed together. Since these are effectively the means of the distributions, they are simply added normally.
+
+### Asymmetric adjustment
+
+Once the emissions and uncertainties are aggregated up to the desired level, a last "corrective" step is taken. According to the IPCC guidelines:
+
+> for multiplicative models, or when the uncertainty is large for a variable that must be non-negative, a lognormal distribution is typically an accurate assumption for the model output
+
+Note that this is for multiplicative models (our case), large uncertainties (encountered fairly often) and regards the model output (hence it is applied at the end). However, as discussed previously, this seems to presuppose that the final distribution is symmetric. In our case, we typically have different upper and lower bounds. As done elsewhere, we deal with this by simply applying the equation twice: once to the upper and once to the lower bound, acknowledging that this is not strictly correct but seems the only reasonable approach.
+
+The approach proposed by the IPCC is to convert the mean and standard deviation to log-normal equivalents, then use equations for upper and lower bounds. The "geometric mean" is calculated as:
+
+$$
+\mu_g = \exp \left\{ \ln(E) - \frac{1}{2} \ln \left( 1 + \left[ \frac{u_E}{200} \right]^2  \right) \right\}
+$$
+
+Then the geometric standard deviation is:
+
+$$
+\sigma_g = \exp \left\{ \sqrt{ \ln \left( 1 + \left[ \frac{u_E}{200} \right]^2  \right) } \right\}
+$$
+
+To arrive at the confidence intervals, we use the geometric mean and standard deviation as follows:
+
+$$
+U_{\text{low}} = \left( \frac{ \exp \left[ \ln(\mu_g) - 1.96 \ln \sigma_g \right] - \mu }{\mu} \right) \times 100
+\\
+U_{\text{high}} = \left( \frac{ \exp \left[ \ln(\mu_g) + 1.96 \ln \sigma_g \right] - \mu }{\mu} \right) \times 100
+$$
+
+
+## Usage
+
+
 
 ```{r setup}
 library(uedgar)
 ```
 
+### Remarks
+
+The methodology here has the advantage that it is considerably faster than Monte Carlo, and is relatively simple. However, it comes with a number of assumptions and limitations, outlined in the [Limitations] section. A slight drawback is that since input uncertainties are defined at a low level, and the aggregation formulas make use of the emissions values, each calculation has to start at a low level and aggregate upwards: we cannot begin with pre-aggregated emissions estimates. This makes some of the larger calculations (e.g. global estimates) potentially a bit slow. Still, national time series can retrieved and evaluated quite quickly
 
 ## Limitations
 
