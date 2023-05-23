@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 The "uedgar" package is an R package developed for calculating confidence intervals of emissions estimates from the JRC's EDGAR database. It also includes some helper functions for interacting with EDGAR (e.g. retrieving data) which may be useful also in other contexts, and a Shiny app which can act as a UI for the R code (i.e. users can run the uncertainty calculations from a UI in the browser, rather than in the R console).
 
-This package was developed in the first months of 2023, and is based on the methodology in [this paper](https://doi.org/10.5194/acp-21-5655-2021), and the code implemented by Efisio Solazzo (former EDGAR researcher).
+This package was developed in the first months of 2023, and is based on the methodology in [this paper](https://doi.org/10.5194/acp-21-5655-2021), and the code implemented by Efisio Solazzo (former EDGAR researcher). The code in uedgar is however completely re-written.
 
 The aim of the package is to provide a reproducible and well-documented set of tools for uncertainty calculation which will hopefully be accessible also to non-R users (or beginners), and also includes unit testing and validation.
 
@@ -134,7 +134,15 @@ uncertainty_table <- get_uncertainty_table(con)
 
 With the uncertainty table so far, we could calculate upper and lower confidence intervals on the emissions estimates, but only at the low level of aggregation. Usually we are more interested in knowing emissions and uncertainties at higher levels, such as total by sector, or total over all sectors, etc.
 
-To do this ... TO FINISH!
+To do this, we have to aggregate the uncertainties up to the level of interest. A slight complication here is that some emissions estimates are assumed to be correlated, while others are uncorrelated, and this implies different aggregation methods. For the moment, uedgar closely follows the methodology from the EDGAR uncertainty paper, which means that the cases that are assumed to be correlated are as follows:
+
+1. For CH4 and N2O: any emissions within the same top-level EDGAR category (e.g. "ENE", "IND", etc) are aggregated as correlated.
+2. For CO2: any emissions with the same fuel type are aggregated as correlated.
+3. When aggregating across countries, emissions from the same sectors are aggregated as correlated. In other words, we treat e.g. the total "ENE" emissions from Italy as correlated with the total "ENE" emissions from France, and all other countries.
+
+All other aggregations are treated as *uncorrelated*. NOTE BIOFUELS.
+
+For *uncorrelated*
 
 ```{r setup}
 library(uedgar)
