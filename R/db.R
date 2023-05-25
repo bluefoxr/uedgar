@@ -5,14 +5,38 @@
 
 #' Establish connection with EDGAR DB
 #'
-#' You need to be on the network for this to work. The user ID and pwd should
-#' be stored in an R file which loads these strings as variables `uname` and `pwd`.
+#' You need to be on the network for this to work. You can enter your user name
+#' and password directly using the `uname` and `pwd` arguments. OR use
+#' `path_to_login` to point to a file where these are stored (see details).
+#'
+#' The `path_to_login` argument should be the path to an R file with login details for
+#' EDGAR. This file can have any name, and should simply have the user name and password
+#' in the following format:
+#'
+#' ````
+#' uname <- "user_name"
+#' pwd <- "password"
+#' ````
+#'
+#' where `user_name` and `password` are replaced with your actual user name and password.
+#' This file will only be accessed if `uname` and `pwd` are not specified.
+#'
+#' @param uname EDGAR user name
+#' @param pwd EDGAR password
+#' @param path_to_login File path to your login file. See details.
 #'
 #' @return ODBC connection
 #' @export
-connect_to_edgar <- function(){
+connect_to_edgar <- function(uname = NULL, pwd = NULL, path_to_login = NULL){
 
-  source(system.file("db_login.R", package = "uedgar"))
+  # defaults for login
+  if(is.null(uname) || is.null(pwd)){
+    if(is.null(path_to_login)){
+      source(system.file("db_login.R", package = "uedgar"))
+    } else {
+      source(path_to_login)
+    }
+  }
 
   odbc::dbConnect(
     odbc::odbc(),

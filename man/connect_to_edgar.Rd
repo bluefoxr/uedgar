@@ -4,12 +4,32 @@
 \alias{connect_to_edgar}
 \title{Establish connection with EDGAR DB}
 \usage{
-connect_to_edgar()
+connect_to_edgar(uname = NULL, pwd = NULL, path_to_login = NULL)
+}
+\arguments{
+\item{uname}{EDGAR user name}
+
+\item{pwd}{EDGAR password}
+
+\item{path_to_login}{File path to your login file. See details.}
 }
 \value{
 ODBC connection
 }
 \description{
-You need to be on the network for this to work. The user ID and pwd should
-be stored in an R file which loads these strings as variables `uname` and `pwd`.
+You need to be on the network for this to work. You can enter your user name
+and password directly using the \code{uname} and \code{pwd} arguments. OR use
+\code{path_to_login} to point to a file where these are stored (see details).
+}
+\details{
+The \code{path_to_login} argument should be the path to an R file with login details for
+EDGAR. This file can have any name, and should simply have the user name and password
+in the following format:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{uname <- "user_name"
+pwd <- "password"
+}\if{html}{\out{</div>}}
+
+where \code{user_name} and \code{password} are replaced with your actual user name and password.
+This file will only be accessed if \code{uname} and \code{pwd} are not specified.
 }

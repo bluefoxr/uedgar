@@ -7,7 +7,7 @@
 get_country_info(con)
 }
 \arguments{
-\item{con}{ODBC connection to EDGAR: use [connect_to_edgar()]}
+\item{con}{ODBC connection to EDGAR: use \code{\link[=connect_to_edgar]{connect_to_edgar()}}}
 }
 \value{
 data.table of country info

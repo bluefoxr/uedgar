@@ -12,14 +12,14 @@
 #' @param sectors Vector of EDGAR sectors
 #' @param agg_countries Logical: whether to aggregate all countries together
 #' @param agg_sectors Logical: whether to aggregate all sectors together
-#' @param agg_substance Logical: whether to aggregate substances together - NOTE
+#' @param agg_substances Logical: whether to aggregate substances together - NOTE
 #' that this is not properly implemented since the emissions are in different
 #' units at the moment.
 #'
 #' @return Data frame of emissions
 #' @export
 get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countries = NULL, sectors = NULL,
-                                    agg_countries = FALSE, agg_sectors = TRUE, agg_substance = FALSE){
+                                    agg_countries = FALSE, agg_sectors = TRUE, agg_substances = FALSE){
 
 
   # Input checks ------------------------------------------------------------

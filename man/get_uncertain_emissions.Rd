@@ -12,11 +12,11 @@ get_uncertain_emissions(
   sectors = NULL,
   agg_countries = FALSE,
   agg_sectors = TRUE,
-  agg_substance = FALSE
+  agg_substances = FALSE
 )
 }
 \arguments{
-\item{con}{DB connection from [connect_to_edgar()]}
+\item{con}{DB connection from \code{\link[=connect_to_edgar]{connect_to_edgar()}}}
 
 \item{substances}{One or more of "CO2", "N2O", "CH4"}
 
@@ -30,7 +30,7 @@ get_uncertain_emissions(
 
 \item{agg_sectors}{Logical: whether to aggregate all sectors together}
 
-\item{agg_substance}{Logical: whether to aggregate substances together - NOTE
+\item{agg_substances}{Logical: whether to aggregate substances together - NOTE
 that this is not properly implemented since the emissions are in different
 units at the moment.}
 }

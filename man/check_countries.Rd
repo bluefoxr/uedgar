@@ -19,9 +19,9 @@ to the DB which might be harder to debug.
 \details{
 Note that these codes are taken from EDGAR and stored
 in the package to avoid having to run the query each time. Occasionally, you
-might need to update this: do so by running `get_valid_countries()` to retrieve the vector of ISO codes, then:
+might need to update this: do so by running \code{get_valid_countries()} to retrieve the vector of ISO codes, then:
 
-`usethis::use_data(valid_countries, overwrite = TRUE)`
+\code{usethis::use_data(valid_countries, overwrite = TRUE)}
 
 to store in the package. This will only work if you are working in the package
 source directory.

@@ -14,14 +14,14 @@ get_emissions_data(
 )
 }
 \arguments{
-\item{con}{An ODBC connection: use [connect_to_edgar()]}
+\item{con}{An ODBC connection: use \code{\link[=connect_to_edgar]{connect_to_edgar()}}}
 
 \item{table_name}{Name of the table to query - if not the default the query might not work}
 
-\item{substances}{A character vector containing any of "CO2", "N2O", "CH4". Or if `NULL`
+\item{substances}{A character vector containing any of "CO2", "N2O", "CH4". Or if \code{NULL}
 returns all substances.}
 
-\item{countries}{A character vector of countries to return data from. Or if `NULL` returns
+\item{countries}{A character vector of countries to return data from. Or if \code{NULL} returns
 all countries.}
 
 \item{years}{Vector of years within the range 1960:2100}

@@ -7,7 +7,7 @@
 get_uncertainty_table(con)
 }
 \arguments{
-\item{con}{DB connection established with [connect_to_edgar()].}
+\item{con}{DB connection established with \code{\link[=connect_to_edgar]{connect_to_edgar()}}.}
 }
 \value{
 Data frame

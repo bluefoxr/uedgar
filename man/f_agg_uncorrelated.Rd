@@ -2,7 +2,7 @@
 % Please edit documentation in R/unc_core.R
 \name{f_agg_uncorrelated}
 \alias{f_agg_uncorrelated}
-\title{Aggregate correlated emissions}
+\title{Aggregate uncorrelated emissions}
 \usage{
 f_agg_uncorrelated(emi, u)
 }
@@ -15,5 +15,5 @@ f_agg_uncorrelated(emi, u)
 Percentage or fraction uncertainty of total emissions
 }
 \description{
-Aggregates a vector of uncertainties and emissions using correlated formula.
+Aggregates a vector of uncertainties and emissions using uncorrelated formula.
 }

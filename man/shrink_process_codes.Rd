@@ -12,7 +12,7 @@ shrink_process_codes(codes, depth = 3)
 \item{depth}{Depth to shrink to (value between 1 and 5)}
 }
 \value{
-Vector of length `codes` but shrunk
+Vector of length \code{codes} but shrunk
 }
 \description{
 Shortens EDGAR process codes to a specified depth

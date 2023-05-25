@@ -200,26 +200,97 @@ U_{\text{low}} = \left( \frac{ \exp \left[ \ln(\mu_g) - 1.96 \ln \sigma_g \right
 U_{\text{high}} = \left( \frac{ \exp \left[ \ln(\mu_g) + 1.96 \ln \sigma_g \right] - \mu }{\mu} \right) \times 100
 $$
 
-
-## Usage
-
-
-
-```{r setup}
-library(uedgar)
-```
+As mentioned previously, due to the fact that we *already* have asymmetric distributions, we actually need to apply this process twice: i.e. the geometric mean and standard deviation are calculated once for the lower bound to get the lower confidence interval, then they are recalculated for the upper bound to get the upper confidence interval. This follows the methodology implemented by ES, but effectively amounts to gluing two half-distributions together. However, this is left as a point to review at some point in the future and is noted in [Limitations].
 
 ### Remarks
 
 The methodology here has the advantage that it is considerably faster than Monte Carlo, and is relatively simple. However, it comes with a number of assumptions and limitations, outlined in the [Limitations] section. A slight drawback is that since input uncertainties are defined at a low level, and the aggregation formulas make use of the emissions values, each calculation has to start at a low level and aggregate upwards: we cannot begin with pre-aggregated emissions estimates. This makes some of the larger calculations (e.g. global estimates) potentially a bit slow. Still, national time series can retrieved and evaluated quite quickly
+
+## Usage
+
+The uedgar package can either be used via its shiny app front end, or by using the functions at the command line. Since most functions depend on interactions with the EDGAR database, it is essential to be able to connect to the database in order for the package to work properly.
+
+### Connecting to EDGAR
+
+In order to connect you will need:
+
+1. To be connected to the JRC scientific network (normally this entails being physically on site in the JRC and connected via a network cable)
+2. To have login credentials for the database which are also stored in the right place
+
+Leaving (1) as your own responsibility, we can focus on (2). First, you need to have login credentials for EDGAR - for this you need to ask the database maintainers if you don't have them already. With these, you can establish a database connection as follows:
+
+```{r, eval=F}
+library(uedgar)
+con <- connect_to_edgar(uname = "my_username", pwd = "my_password")
+```
+
+Clearly, you need to substitute your real username and password in the previous command. If the connection is successful, `con` will be a database connection object which is used in other uedgar functions. So, this command typically needs to be run first.
+
+### Getting uncertainties
+
+The main function for obtaining emissions uncertainties is `get_uncertain_emissions()`. This function returns tables of emissions data with confidence intervals, based on specified queries, and aggregated up to the level of interest. The format of the function is as follows (the values here are the function defaults):
+
+```{r, eval=FALSE}
+df_emissions <- get_uncertain_emissions(con, substances = NULL, years = NULL, countries = NULL, sectors = NULL,
+                        agg_countries = FALSE, agg_sectors = TRUE, agg_substance = FALSE)
+```
+
+Here, `con` is the database connection established previously. Then `substances`, `years`, `countries` and `sectors` are the query arguments which specify which data to retrieve from EDGAR. For example, if we set:
+
+* `substances = "CO2"`
+* `years = 2000:2020`
+* `countries = c("ITA", "GBR, "FRA")`
+* `sectors = "ENE"`
+
+the function will query EDGAR, and retrieve data for CO2, for the years 2000-2020, for countries Italy, UK and France, and for the "ENE" sector. For all of these arguments, setting `NULL` returns all data from that field: e.g. if `sectors = NULL`, all sectors are returned.
+
+The remaining arguments `agg_countries`, `agg_sectors` and `agg_substances` specify the level to aggregate the emissions data up to. These are logical parameters:
+
+* `agg_countries = TRUE` means that emissions will be added together across all countries queried
+* `agg_sectors = TRUE` means that emissions will be added together across all sectors queried
+* `agg_substances = TRUE` means that emissions will be added together for all substances queried (note this feature is not yet implemented)
+
+Where any is `FALSE`, the emissions are left disaggregated with respect to that field. Emissions estimates are always returned with confidence intervals.
+
+To give a couple of examples: first, the total CH4 emissions of Italy and France over all time points available:
+
+```{r, eval=FALSE}
+get_uncertain_emissions(con, substances = "CH4", countries = c("ITA", "FRA"),
+                                        agg_countries = FALSE)
+```
+
+here we left all other arguments at their defaults. Another example could be global CO2 emissions in "ENE" for 2020:
+
+```{r, eval=FALSE}
+get_uncertain_emissions(con, substances = "CO2", years = 2020, sectors = "ENE", agg_countries = TRUE)
+```
+
+
+### Running the app
+
+The uedgar package includes a [shiny](https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/index.html) app which acts as a front end for `get_uncertain_emissions()` and plots time series of emissions data with confidence intervals. To run the app:
+
+```{r, eval=FALSE}
+library(uedgar)
+run_app()
+```
+
+Note that this will only work when connected to EDGAR (see [Connecting to EDGAR]). TO ADD: how to login to EDGAR from the app?
+
+### Other functions
+
+The uedgar package consists of a number of other functions which support the app and the top-level `get_uncertain_emissions()`. These can be browsed in the uedgar package documentation. Of possible interest in other contexts could be `get_emissions_data()` which is a general-purpose interface function to EDGAR, and generates SQL queries based on its input arguments.
 
 ## Limitations
 
 The methodology used here involves a number of assumptions and is far from perfect. However, it seems the most viable way to estimate uncertainty, given the available data and constraints such as computational time. The limitations are summarised here. 
 
 * The uncertainty calculation assumes that the only sources of uncertainty are the EF and AD uncertainties. In reality there are probably many others.
-* The uncertainty estimate on emissions is only as accurate as the uncertainty estimates for EF and AD. So if these uncertainties are not accurate, the end emissions uncertainty estimates will also not be accurate. To improve this, we could review the input uncertainty tables to check their accuracy and update where possible.
+* The uncertainty estimate on emissions is only as accurate as the uncertainty estimates for EF and AD. So if these uncertainties are not accurate, the end emissions uncertainty estimates will also not be accurate. To improve this, we could review the input uncertainty tables to check their accuracy and update where possible. Indeed, in the process of compiling the tables, some inconsistencies were noted and this should be reviewed at some point.
 * The IPCC methodology assumes that AD and EF uncertainties are symmetric and normally-distributed. In reality, EF uncertainties at least are often skewed. To get round this we use separate estimates for upper and lower bounds, although this is not strictly correct. Probably the only way to do this more correctly is using a Monte Carlo approach.
 * We cap all emissions uncertainties (at the lowest level) at 230%.
+* Similar to a previous point, when estimating log-normal parameters at the last step (see [Asymmetric adjustment]) we are forced to estimate the upper and lower confidence intervals using different parameters: one set for the lower bound and one for the upper. This is because the distribution is *already* asymmetric.
 * At the moment, we can only estimate uncertainties on CO2, CH4 and N2O, because these are the only ones for which we have EF uncertainty data (at the moment).
+
+All of these points should be reviewed when possible, to see whether the methodology can be improved to avoid more dubious assumptions and to improve the quality of the input data.
 
