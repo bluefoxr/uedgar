@@ -32,7 +32,7 @@ connect_to_edgar <- function(uname = NULL, pwd = NULL, path_to_login = NULL){
   # defaults for login
   if(is.null(uname) || is.null(pwd)){
     if(is.null(path_to_login)){
-      source(system.file("db_login.R", package = "uedgar"))
+      source(system.file("db_login.R", package = "uedgar"), local = TRUE)
     } else {
       source(path_to_login)
     }

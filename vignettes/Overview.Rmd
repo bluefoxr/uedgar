@@ -180,6 +180,12 @@ Once the emissions and uncertainties are aggregated up to the desired level, a l
 
 Note that this is for multiplicative models (our case), large uncertainties (encountered fairly often) and regards the model output (hence it is applied at the end). However, as discussed previously, this seems to presuppose that the final distribution is symmetric. In our case, we typically have different upper and lower bounds. As done elsewhere, we deal with this by simply applying the equation twice: once to the upper and once to the lower bound, acknowledging that this is not strictly correct but seems the only reasonable approach.
 
+Following the implementation of ES, we apply the log-normal transformation if the *lower bound* on the uncertainty is greater than 50%:
+
+> Asymmetric uncertainty is calculated only when lower bound is >=50% as suggested by Margarita (mail 11 July 2019)
+
+This agrees with the IPCC guidelines which also use the cut-off of the uncertainty half-range (two standard deviations) of 50%.
+
 The approach proposed by the IPCC is to convert the mean and standard deviation to log-normal equivalents, then use equations for upper and lower bounds. The "geometric mean" is calculated as:
 
 $$

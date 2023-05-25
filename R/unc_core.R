@@ -99,6 +99,28 @@ aggregate_by_group <- function(dt_emissions, by_group, correlated = TRUE){
 
 }
 
+# transform_to_lognormal <- function(dt_emissions){
+#
+#   # only applied where lower bound is >50%
+#   dt_emissions[prc_lower > 50, ]
+# }
+
+# vectorised and should take vectors emi, u_lower and u_upper
+# TO FINISH
+to_lognormal <- function(emi, u_lower, u_upper, u_lower_thresh = 50){
+
+  # note emi is treated as mu
+  mu_lower <- exp(log(emi) - 0.5*log(1 + (u_lower/200)^2))
+  mu_upper <- exp(log(emi) - 0.5*log(1 + (u_upper/200)^2))
+
+  sig_lower <- exp(sqrt(log(1 + (u_lower/200)^2)))
+  sig_upper <- exp(sqrt(log(1 + (u_upper/200)^2)))
+
+  u_lower_ln <- (exp(log(mu_lower) - 1.96*log(sig_lower)) - emi)/emi * 100
+
+
+}
+
 # SPARE CODE --------------------------------------------------------------
 
 # Aggregate emissions uncertainties by group
