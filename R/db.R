@@ -64,14 +64,15 @@ connect_to_edgar <- function(uname = NULL, pwd = NULL, path_to_login = NULL){
 #' all countries.
 #' @param years Vector of years within the range 1960:2100
 #' @param sectors Character vector of sector codes to return
+#' @param emi_id data set ID, as a string
 #'
 #' @import data.table
 #'
 #' @return A data.table of emissions data
 #' @export
-get_emissions_data <- function(con, table_name = "emi_edgar_release",
-                               substances = NULL, countries = NULL,
-                               years = NULL, sectors = NULL){
+get_emissions_data <- function(con, substances = NULL, countries = NULL,
+                               years = NULL, sectors = NULL, emi_id = "29072022103026",
+                               table_name = "emi_edgar_release"){
 
   # Checks ------------------------------------------------------------------
 
@@ -100,7 +101,8 @@ get_emissions_data <- function(con, table_name = "emi_edgar_release",
   # Assemble the row part of the query - if NULL some parts are skipped and
   # this returns all rows.
 
-  rows_to_return <- "emi_id = '29072022103026'"
+  # data set ID
+  rows_to_return <- glue::glue("emi_id = '{emi_id}'")
 
   if(!is.null(substances)){
     stopifnot(all(substances %in% c("CO2", "N2O", "CH4")))
@@ -165,6 +167,24 @@ get_country_info <- function(con){
 
   DBI::dbReadTable(con, "Countries") |>
     data.table::as.data.table()
+}
+
+get_ISO3_in_group <- function(con, country_group){
+
+  # check which group codes exist
+  existing_groups <- DBI::dbGetQuery(con, "SELECT DISTINCT Group_code FROM Country_groups")[[1]]
+
+  # report any missing groups and stop in that case
+  missing_groups <- setdiff(country_group, existing_groups)
+  if(length(missing_groups) > 0){
+    stop("One or more specified groups not recognised: ", toString(missing_groups))
+  }
+
+  # return query
+  DBI::dbGetQuery(
+    con,
+    paste0("SELECT Country_code_A3 FROM Country_groups WHERE Group_code IN ('", country_group, "')")
+  )[[1]]
 }
 
 #' Get uncertainty table from DB

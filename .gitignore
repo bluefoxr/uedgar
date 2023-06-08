@@ -4,3 +4,4 @@
 .Ruserdata
 db_login.R
 inst/doc
+^cache$

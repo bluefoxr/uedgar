@@ -9,10 +9,13 @@ get_uncertain_emissions(
   substances = NULL,
   years = NULL,
   countries = NULL,
+  country_groups = NULL,
   sectors = NULL,
   agg_countries = FALSE,
   agg_sectors = TRUE,
-  agg_substances = FALSE
+  agg_substances = FALSE,
+  emi_id = "29072022103026",
+  use_lognormal = TRUE
 )
 }
 \arguments{
@@ -33,6 +36,8 @@ get_uncertain_emissions(
 \item{agg_substances}{Logical: whether to aggregate substances together - NOTE
 that this is not properly implemented since the emissions are in different
 units at the moment.}
+
+\item{emi_id}{data set ID, as a string. See details}
 }
 \value{
 Data frame of emissions
@@ -40,4 +45,8 @@ Data frame of emissions
 \description{
 Returns a table of emissions data with confidence intervals, aggregated up to
 a specified limit.
+}
+\details{
+Note that for \code{emi_id}, the default data set is \code{"29072022103026"}. Another
+useful data set is \code{"09062022142022"}, which is CO2 emissions excluding biofuels.
 }

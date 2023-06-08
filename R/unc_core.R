@@ -107,7 +107,20 @@ aggregate_by_group <- function(dt_emissions, by_group, correlated = TRUE){
 
 # vectorised and should take vectors emi, u_lower and u_upper
 # TO FINISH
-to_lognormal <- function(emi, u_lower, u_upper, u_lower_thresh = 50){
+to_lognormal <- function(dt_emissions, u_lower_thresh = 50){
+
+  rows_to_replace <- dt_emissions$prc_lower > 50
+
+  if(sum(rows_to_replace) == 0){
+    return(dt_emissions)
+  }
+
+  # get required columns
+  emi <- dt_emissions$Emissions[rows_to_replace]
+  u_lower <- dt_emissions$prc_lower[rows_to_replace]
+  u_upper <- dt_emissions$prc_upper[rows_to_replace]
+
+  # CALCULATIONS
 
   # note emi is treated as mu
   mu_lower <- exp(log(emi) - 0.5*log(1 + (u_lower/200)^2))
@@ -116,9 +129,18 @@ to_lognormal <- function(emi, u_lower, u_upper, u_lower_thresh = 50){
   sig_lower <- exp(sqrt(log(1 + (u_lower/200)^2)))
   sig_upper <- exp(sqrt(log(1 + (u_upper/200)^2)))
 
-  u_lower_ln <- (exp(log(mu_lower) - 1.96*log(sig_lower)) - emi)/emi * 100
+  # NOTE lower bound is a negative fraction (following IPCC formula), so we
+  # multiply by emi and then ADD
+  u_lower_ln <- (exp(log(mu_lower) - 1.96*log(sig_lower)) - emi)/emi
+  u_upper_ln <- (exp(log(mu_upper) + 1.96*log(sig_upper)) - emi)/emi
 
+  # REPLACE COLS
+  dt_emissions$prc_lower[rows_to_replace] <- u_lower_ln*-100
+  dt_emissions$prc_upper[rows_to_replace] <- u_upper_ln*100
+  dt_emissions$Emissions_Min[rows_to_replace] <- emi + emi*u_lower_ln
+  dt_emissions$Emissions_Max[rows_to_replace] <- emi + emi*u_upper_ln
 
+  dt_emissions
 }
 
 # SPARE CODE --------------------------------------------------------------

@@ -60,7 +60,7 @@ run_app <- function(){
 
     output$ts_plot <- plotly::renderPlotly({
       req(emi())
-      plot_time_series(emi())
+      iplot_time_series(emi())
     })
 
     output$nodata_text <- renderText({

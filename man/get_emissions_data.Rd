@@ -6,17 +6,16 @@
 \usage{
 get_emissions_data(
   con,
-  table_name = "emi_edgar_release",
   substances = NULL,
   countries = NULL,
   years = NULL,
-  sectors = NULL
+  sectors = NULL,
+  emi_id = "29072022103026",
+  table_name = "emi_edgar_release"
 )
 }
 \arguments{
 \item{con}{An ODBC connection: use \code{\link[=connect_to_edgar]{connect_to_edgar()}}}
-
-\item{table_name}{Name of the table to query - if not the default the query might not work}
 
 \item{substances}{A character vector containing any of "CO2", "N2O", "CH4". Or if \code{NULL}
 returns all substances.}
@@ -27,6 +26,10 @@ all countries.}
 \item{years}{Vector of years within the range 1960:2100}
 
 \item{sectors}{Character vector of sector codes to return}
+
+\item{emi_id}{data set ID, as a string}
+
+\item{table_name}{Name of the table to query - if not the default the query might not work}
 }
 \value{
 A data.table of emissions data
