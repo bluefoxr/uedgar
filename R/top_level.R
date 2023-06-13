@@ -42,7 +42,7 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
   valid_rows_in_cache <- FALSE
   # check if cache exists
   path_cache <- system.file("cache_unc.RDS", package = "uedgar")
-  cache_exists <- file.exists(file_name)
+  cache_exists <- file.exists(path_cache)
 
   if(use_cache && cache_exists){
 
@@ -83,6 +83,7 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
 
       # if nothing is missing, return cached dt
       if(sum(missing_rows) == 0){
+        setorder(dt_cache, cols = "Year")
         return(dt_cache)
       }
 
@@ -94,8 +95,13 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
       substances <- unique(df_combinations$Substance)
       sectors <- unique(df_combinations$Sector)
 
-      countries <- if(countries == "ALL") NULL else countries
-      sectors <- if(sectors == "ALL") NULL else sectors
+      countries <- if(length(countries) == 1){
+        if (countries == "ALL") NULL else countries
+      } else countries
+
+      sectors <- if(length(sectors) == 1){
+        if (sectors == "ALL") NULL else sectors
+      } else sectors
 
     }
 
@@ -285,6 +291,8 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
     dt_aggregated <- rbind(dt_cache, dt_aggregated)
   }
 
+  # sort by year
+  setorder(dt_aggregated, cols = "Year")
   return(dt_aggregated)
 
 }
