@@ -9,7 +9,11 @@
 #' useful data set is `"09062022142022"`, which is CO2 emissions excluding biofuels.
 #'
 #' @param con DB connection from [connect_to_edgar()]
-#' @param substances One or more of "CO2", "N2O", "CH4"
+#' @param substances One or more of "CO2", "N2O", "CH4", as a character vector. OR if this is specified as a named list,
+#' will map each substance to its name. For example, `list(CH4 = "GWP_100_AR5_CH4")` will retrieve "GWP_100_AR5_CH4" from
+#' the database, but will use the CH4 uncertainty values in the table. This is used for example,
+#' when I wanted to select substances like "GWP_100_AR5_CH4" which is CH4 in CO2 equiv. Then I map this to CH4.
+#' Otherwise, although the data will be retrieved, it will not be correctly matched to the uncertainty table.
 #' @param years Vector of years
 #' @param countries Vector of ISO3 country codes
 #' @param sectors Vector of EDGAR sectors
@@ -22,6 +26,8 @@
 #' @param use_cache Logical: if `TRUE` tries to retrieve data from cache. If data is
 #' found that matches the query or a subset of the query, it will use that, and
 #' query the database for any remaining aggregate values.
+#' @param country_groups Optional vector of country groups - overrides countries if specified.
+#' @param use_lognormal Logical: whether to use the log-normal transformation at the end of the calculation
 #'
 #' @return Data frame of emissions
 #' @export
@@ -31,7 +37,16 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
 
   # Input checks ------------------------------------------------------------
 
-  check_substances(substances)
+  if(is.list(substances)){
+    # if list, means substance mapping. Convert to character to avoid issues,
+    # and name separately.
+    l_substances <- substances
+    substances <- as.character(substances)
+  } else {
+    l_substances <- NULL
+  }
+
+  #check_substances(substances)
   check_years(years)
   check_sectors(sectors)
 
@@ -137,6 +152,14 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
     "SELECT Country_code_A3, dev_country FROM Countries WHERE dev_country IN ('I', 'D')"
   ) |> data.table::as.data.table()
 
+  countries_table <- rbind(
+    countries_table,
+    data.frame(Country_code_A3 = c("AIR", "SEA"), dev_country = "I")
+  )
+
+  # I am going to presume that AIR and SEA are both Industrialised for the purposes of uncertainty
+
+
   dt_emissions <- countries_table[dt_emissions, on = .(Country_code_A3)]
 
   # Join on uncertainties ---------------------------------------------------
@@ -151,10 +174,26 @@ get_uncertain_emissions <- function(con, substances = NULL, years = NULL, countr
     warning("Some AD codes from data set not found in uncertainty table: ", toString(missing_codes), call. = TRUE)
   }
 
-  dt_emissions <- unc_table[dt_emissions, on = .(Country = dev_country, Process = ad_code, Substance = Substance)]
+  # map substances in uncertainty table if needed
+  if(!is.null(l_substances)){
+    for(ii in 1:length(l_substances)){
+      unc_table$Substance[unc_table$Substance == names(l_substances)[ii]] <- l_substances[[ii]]
+    }
+  }
+
+  # merge: I have allowed for duplicates here and I think it is to do with the
+  # duplicates in the uncertainty table, still to be corrected
+  dt_emissions <- merge(x = dt_emissions, y = unc_table,
+                        by.x = c("dev_country", "ad_code", "Substance"),
+                        by.y = c("Country", "Process", "Substance"),
+                        all.x = TRUE, allow.cartesian = T)
+
+  #dt_emissions <- unc_table[dt_emissions, on = .(Country = dev_country, Process = ad_code, Substance = Substance)]
 
   # change names to something clearer
-  setnames(dt_emissions, c("Unc_emi_min_fixed", "Unc_emi_max_fixed"), c("prc_lower", "prc_upper"))
+  setnames(dt_emissions,
+           c("Unc_emi_min_fixed", "Unc_emi_max_fixed", "ad_code"),
+           c("prc_lower", "prc_upper", "Process"))
 
   # NOTE the prc_lower and prc_upper cols are the upper and lower uncertainty factors, for emissions,
   # as PERCENTAGES. This is already after cap at 230% and correction factor.

@@ -1,0 +1,49 @@
+---
+output: html_document
+params:
+  df_c: NULL
+  ISO3: NULL
+  cname: NULL
+title: "`r paste0(params$ISO3, ': ', params$cname)`"
+---
+
+```{r, setup, include=FALSE}
+# set this option in the first code chunk in the document
+knitr::opts_chunk$set(echo = FALSE)
+
+df_c <- params$df_c
+
+# ISO3 <- params$ISO3
+# stopifnot(length(ISO3) == 1)
+# cname <- countrycode::countrycode(ISO3, "iso3c", "country.name.en")
+# if(is.na(cname)) cname <- ""
+
+library(ggplot2)
+
+```
+
+
+```{r, results='asis', fig.width= 10, fig.height= 3}
+tseries <- df_c$series
+df_c <- df_c[2:6]
+df_c$Mean <- paste0(round(df_c$Mean, 2), "%")
+df_c$Median <- paste0(round(df_c$Median, 2), "%")
+df_c$Max <- paste0(round(df_c$Max, 2), "%")
+
+for(ii in 1:nrow(df_c)){
+  
+  # table summary of time series comparison
+  print(knitr::kable(df_c[ii,], row.names = FALSE))
+  cat('\n\n<!-- -->\n\n')
+  
+  # plot
+  df_plot <- as.data.frame(tseries[[ii]])
+  plt <- ggplot(df_plot, aes(x = Year, y = Emissions,
+                    group = Dataset, color = Dataset, linetype = Dataset)) +
+    geom_line(alpha = 0.5, linewidth = 1) +
+    theme_minimal()
+  
+  print(plt)
+}
+```
+

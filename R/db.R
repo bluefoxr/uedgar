@@ -105,7 +105,7 @@ get_emissions_data <- function(con, substances = NULL, countries = NULL,
   rows_to_return <- glue::glue("emi_id = '{emi_id}'")
 
   if(!is.null(substances)){
-    stopifnot(all(substances %in% c("CO2", "N2O", "CH4")))
+    #stopifnot(all(substances %in% c("CO2", "N2O", "CH4")))
     substances <- paste0(substances, collapse = "', '")
     rows_to_return <- glue::glue(
       "{rows_to_return}",
@@ -215,4 +215,20 @@ get_uncertainty_table <- function(con){
   unc_table[Country == "AAA", Country := "D"]
 
   unc_table
+}
+
+#' Get data set ID
+#'
+#' @param dataset_name Name of data set
+#' @param con Connection to EDGAR
+#'
+#' @return ID
+#' @export
+get_dataset_ID <- function(dataset_name, con){
+
+  DBI::dbGetQuery(
+    con,
+    paste0("SELECT ds_id FROM datasets WHERE ds_name = '", dataset_name, "'")) |>
+    unlist()
+
 }

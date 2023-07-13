@@ -110,3 +110,12 @@ proc_code_depth <- function(codes){
 }
 
 
+#' Convert character vector to string for SQL
+#'
+#' @param x A character vector
+#'
+#' @return A string that can be used in an SQL query, e.g. IN
+#' @export
+character_to_query <- function(x){
+  paste0("'",paste(x, collapse = "', '"), "'")
+}
